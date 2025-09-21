@@ -2,7 +2,7 @@ package domain
 
 import "time"
 
-// SensorData -> ölçüm sonuçları
+// ölçüm sonuçları
 type SensorData struct {
 	ID        string `gorm:"primaryKey;size:64"`
 	DeviceID  string `gorm:"size:64;not null"` // fk

@@ -2,25 +2,31 @@ package main
 
 import (
 	"context"
-	"log"
 	"ziyaremtestcase/application"
 	"ziyaremtestcase/domain"
 	"ziyaremtestcase/infrastructure"
 	"ziyaremtestcase/sensors"
+
+	"github.com/sirupsen/logrus"
+	"time"
 )
 
 func main() {
+	logger := logrus.New()
+	logger.SetLevel(logrus.InfoLevel)
+
 	db := infrastructure.NewDB()
 	cache := infrastructure.NewRedisCache()
 	repo := infrastructure.NewSensorRepository(db)
 
-	service := application.NewAppService(cache, repo)
+	cb := application.NewCircuitBreaker(3, 30*time.Second)
+	service := application.NewAppService(cache, repo, cb, logger)
 
-	// Sensörleri veri tabanından çek
+	// DB’den sensör API listesi al
 	var apis []domain.SensorAPI
 	db.Preload("Device.Type").Find(&apis)
 
-	// Sensör tipine göre adaptörr seç
+	// Her sensörü oku
 	for _, api := range apis {
 		var sensor domain.Sensor
 		switch api.Device.Type.Name {
@@ -28,18 +34,18 @@ func main() {
 			sensor = &sensors.TempSensor{Endpoint: api.Endpoint}
 		case "humidity":
 			sensor = &sensors.HumiditySensor{Endpoint: api.Endpoint}
+		case "airquality":
+			sensor = &sensors.AirQualitySensor{Endpoint: api.Endpoint}
 		default:
-			log.Printf("desteklenmeyen sensör tipi: %s", api.Device.Type.Name)
+			logger.Warnf("Desteklenmeyen sensör tipi: %s", api.Device.Type.Name)
 			continue
 		}
 
-		// Sensör verisini oku
 		data, err := service.GetSensorData(context.Background(), sensor, api.DeviceID)
 		if err != nil {
-			log.Printf("Sensör (%s) verisi alınamadı: %v", api.DeviceID, err)
+			logger.Errorf("Sensor %s failed: %v", api.DeviceID, err)
 			continue
 		}
-
-		log.Printf("SensorData kaydedildi: %+v", data)
+		logger.Infof("SensorData okundu ve kaydedildi: %+v", data)
 	}
 }
