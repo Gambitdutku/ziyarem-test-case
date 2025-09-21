@@ -5,7 +5,7 @@ import "time"
 // SensorData -> ölçüm sonuçları
 type SensorData struct {
 	ID        string `gorm:"primaryKey;size:64"`
-	DeviceID  string `gorm:"size:64;not null"` // Foreign key -> SensorDevice.DeviceID
+	DeviceID  string `gorm:"size:64;not null"` // fk
 	Device    SensorDevice
 	Value     float64   `gorm:"not null"`
 	Timestamp time.Time `gorm:"not null"`

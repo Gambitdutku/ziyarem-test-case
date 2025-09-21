@@ -39,7 +39,7 @@ func NewDB() *gorm.DB {
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("❌ DB connection failed:", err)
+		log.Fatal("veri tabanına bağlanamadı:", err)
 	}
 
 	// objectleri dbye yazmak için
